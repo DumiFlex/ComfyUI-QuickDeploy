@@ -76,7 +76,7 @@ set "DEST_DIR=%~dp0"
 if "%DEST_DIR:~-1%"=="\" set "DEST_DIR=%DEST_DIR:~0,-1%"
 
 
-set "EXCLUDE_FILES=README.md,LICENSE,install-comfyui.bat"
+set "EXCLUDE_FILES=README.md,LICENSE,install-comfyui.bat,.gitignore"
 set "EXCLUDE_DIRS=docs,tests,examples"
 
 set "EXCLUDE_FILES_ARGS="
@@ -98,34 +98,11 @@ if %errorlevel% GEQ 8 (
 )
 
 echo !GREEN![OK] Files copied successfully from the repository!RESET!
-
-pause
-exit
-
-:: Create scripts folder if missing
-if not exist "%SCRIPTS_DIR%" (
-    echo !YELLOW![INFO] Creating scripts folder: %SCRIPTS_DIR%!RESET!
-    mkdir "%SCRIPTS_DIR%"
-)
-
-:: Download URLs
-set "URL_INSTALL_PS=https://yourdomain.com/scripts/install.ps1"
-set "URL_UPDATE_PS=https://yourdomain.com/scripts/update.ps1"
-:: ... add more URLs as needed
-
-:: Download scripts
-echo !CYAN![INFO] Downloading setup scripts...!RESET!
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
-  "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '%URL_INSTALL_PS%' -OutFile '%SCRIPTS_DIR%\install.ps1'"
-
-:: TODO: Add error checking after each download
-
-echo !GREEN![OK] All scripts downloaded.!RESET!
 echo.
 
 :: Run the installer
 echo !CYAN![INFO] Launching the main install script...!RESET!
-powershell.exe -ExecutionPolicy Bypass -File "%SCRIPTS_DIR%\install.ps1" -InstallPath "%~dp0"
+powershell.exe -ExecutionPolicy Bypass -File "%SCRIPTS_DIR%\install-comfyui.ps1" -InstallPath "%~dp0"
 
 :: Cleanup
 echo !CYAN![INFO] Cleaning up temporary files...!RESET!
