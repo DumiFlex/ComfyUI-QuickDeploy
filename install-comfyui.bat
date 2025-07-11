@@ -11,8 +11,6 @@ set "YELLOW=%ESC%[33m"
 set "CYAN=%ESC%[36m"
 set "RED=%ESC%[31m"
 
-:: Project info
-set "PROJECT_NAME=CozyComfyUI"
 set "SCRIPTS_DIR=%~dp0scripts"
 
 :: Request admin if needed
@@ -102,7 +100,7 @@ echo.
 
 :: Run the installer
 echo !CYAN![INFO] Launching the main install script...!RESET!
-powershell.exe -ExecutionPolicy Bypass -File "%SCRIPTS_DIR%\install-comfyui.ps1" -InstallPath "%~dp0"
+powershell.exe -ExecutionPolicy Bypass -File "%SCRIPTS_DIR%\install-comfyui.ps1" -InstallPath "%~dp0" --TempPath "%TEMP_DIR%"
 
 :: Cleanup
 echo !CYAN![INFO] Cleaning up temporary files...!RESET!
