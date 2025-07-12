@@ -28,7 +28,6 @@ param(
 # --- Cleaning and configuring paths ---
 $InstallPath = $InstallPath.TrimEnd('"')
 $InstallPath = [IO.Path]::GetFullPath($InstallPath).TrimEnd('\', '/')
-$installFolderName = Split-Path $InstallPath -Leaf
 $parentOfInstallPath = Split-Path $InstallPath -Parent
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -104,7 +103,7 @@ function Invoke-AndLog {
     }
 }
 
-function Download-File {
+function Invoke-DownloadFile {
     param(
         [string]$Uri,
         [string]$OutFile,
@@ -127,7 +126,7 @@ function Download-File {
     }
 }
 
-function Safe-RemoveDirectory {
+function Remove-DirectorySafely {
     param (
         [string]$Path,
         [int]$MaxRetries = 5,
@@ -159,7 +158,7 @@ function Install-Aria2-Binary {
     if (-not (Test-Path $destFolder)) { New-Item -ItemType Directory -Force -Path $destFolder | Out-Null }
     $aria2Url = "https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-win-64bit-build1.zip"
     $zipPath  = Join-Path $env:TEMP "aria2_temp.zip"
-    Download-File -Uri $aria2Url -OutFile $zipPath
+    Invoke-DownloadFile -Uri $aria2Url -OutFile $zipPath
     Write-Log "Extracting zip file to $destFolder..." -Color Magenta -Level "INFO" -PrefixIndent 2
     Expand-Archive -Path $zipPath -DestinationPath $destFolder -Force
     $extractedSubfolder = Join-Path $destFolder "aria2-1.36.0-win-64bit-build1"
@@ -182,7 +181,7 @@ function Install-Aria2-Binary {
     Write-Log "--- Aria2 binary installation complete ---" -Color Magenta -Level "INFO" -PrefixIndent 2
 }
 
-function Ensure-ToolInstalled {
+function Install-ToolIfNeeded {
     param(
         [string]$CommandName,
         [scriptblock]$InstallAction,
@@ -220,8 +219,6 @@ function Ensure-ToolInstalled {
 #===========================================================================
 
 Clear-Host
-$simulateNonWindows = $true
-
 if ($env:OS -notlike "*Windows*" -or !(Get-CimInstance -ClassName Win32_OperatingSystem)) {
     Write-Host "This script is designed for Windows systems only. Press any key to exit." -ForegroundColor Red -NoNewline
     Read-Host
@@ -276,7 +273,6 @@ if ($pythonPath) {
             if ($versionParts.Count -ge 3) {
                 $major = [int]$versionParts[0]
                 $minor = [int]$versionParts[1]
-                $patch = [int]$versionParts[2]
                 if ($major -gt 3 -or ($major -eq 3 -and $minor -ge 12)) {
                     Write-Log "Python version is sufficient (3.12 or higher)." -Color Green -Level "OK" -PrefixIndent 2
                     $pythonVersionOK = $true
@@ -297,7 +293,7 @@ if (-not $pythonVersionOK) {
     $pythonInstallerUrl = "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe"
     $pythonInstallerPath = Join-Path $env:TEMP "python-3.12.10-installer.exe"
     Write-Log "Downloading Python installer from $pythonInstallerUrl" -Color Yellow -Level "INFO" -PrefixIndent 2
-    Download-File -Uri $pythonInstallerUrl -OutFile $pythonInstallerPath
+    Invoke-DownloadFile -Uri $pythonInstallerUrl -OutFile $pythonInstallerPath
     if (-not (Test-Path $pythonInstallerPath)) {
         Write-Log "Failed to download Python installer." -Color Red -Level "ERROR" -PrefixIndent 2
         exit 1
@@ -316,18 +312,18 @@ Write-Log "" -usePrefix $false
 
 # --- Step 2: Installing dependencies (Aria2, 7-Zip, Git) ---
 Write-Log "Checking and installing required tools..." -Color Magenta -Level "STEP 2"
-Ensure-ToolInstalled -CommandName 'aria2c' -InstallAction { Install-Aria2-Binary }
+Install-ToolIfNeeded -CommandName 'aria2c' -InstallAction { Install-Aria2-Binary }
 
-Ensure-ToolInstalled -CommandName '7z' -CheckPath $sevenZipPath -InstallAction {
+Install-ToolIfNeeded -CommandName '7z' -CheckPath $sevenZipPath -InstallAction {
     $sevenZipInstaller = Join-Path $env:TEMP "7z-installer.exe"
-    Download-File -Uri "https://www.7-zip.org/a/7z2201-x64.exe" -OutFile $sevenZipInstaller
+    Invoke-DownloadFile -Uri "https://www.7-zip.org/a/7z2201-x64.exe" -OutFile $sevenZipInstaller
     Start-Process -FilePath $sevenZipInstaller -ArgumentList "/S" -Wait
     Remove-Item $sevenZipInstaller
 }
 
-Ensure-ToolInstalled -CommandName 'git' -InstallAction {
+Install-ToolIfNeeded -CommandName 'git' -InstallAction {
     $gitInstaller = Join-Path $env:TEMP "Git-Installer.exe"
-    Download-File -Uri "https://github.com/git-for-windows/git/releases/download/v2.41.0.windows.3/Git-2.41.0.3-64-bit.exe" -OutFile $gitInstaller
+    Invoke-DownloadFile -Uri "https://github.com/git-for-windows/git/releases/download/v2.41.0.windows.3/Git-2.41.0.3-64-bit.exe" -OutFile $gitInstaller
     Start-Process -FilePath $gitInstaller -ArgumentList "/VERYSILENT" -Wait
     Remove-Item $gitInstaller
 }
@@ -349,7 +345,7 @@ if (Test-Path $comfyPath) {
     Write-Log "Ensuring no Python processes are running..." -Color DarkCyan -Level "INFO" -PrefixIndent 2
     Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1
-    Safe-RemoveDirectory -Path $comfyPath
+    Remove-DirectorySafely -Path $comfyPath
     Write-Log "" -usePrefix $false
 }
 
@@ -377,7 +373,7 @@ foreach ($folder in $foldersToCopy) {
     $sourcePath = Join-Path -Path $comfyPath -ChildPath $folder
     $sourceName = $sourcePath.Replace($parentOfInstallPath, '').TrimStart('\', '/')
     if (-not (Test-Path $sourcePath)) {
-        Write-Log "Source folder '$sourcePath' does not exist. Skipping." -Color DarkGray -Level "INFO" -PrefixIndent 2
+        Write-Log "Source folder '$sourceName' does not exist. Skipping." -Color DarkGray -Level "INFO" -PrefixIndent 2
         continue
     }
     $destPath = Join-Path -Path $InstallPath -ChildPath $folder
@@ -444,7 +440,7 @@ $whlPath = Join-Path -Path $tempPath -ChildPath "whl"
 foreach ($whlFile in $whlFiles) {
     $whlUrl = "$whlBaseUrl$whlFile"
     $outFile = Join-Path -Path $whlPath -ChildPath $whlFile
-    Download-File -Uri $whlUrl -OutFile $outFile -PrefixIndent 4 -Color DarkGray
+    Invoke-DownloadFile -Uri $whlUrl -OutFile $outFile -PrefixIndent 4 -Color DarkGray
 }
 
 Write-Log "" -usePrefix $false
@@ -588,6 +584,8 @@ if ($LASTEXITCODE -ne 0) {
 $accelerateVersion = & $venvPython -c "import importlib.metadata; print(importlib.metadata.version('accelerate'))"
 Write-Log "Accelerate Version: $accelerateVersion" -Color Green -Level "OK" -PrefixIndent 2
 Write-Log "" -usePrefix $false
+
+Write-Log "Installing custom nodes..." -Color Magenta -Level "STEP 8"
 
 $customNodesPath = Join-Path -Path $InstallPath -ChildPath "custom_nodes"
 if (-not (Test-Path $customNodesPath)) {
