@@ -2,4 +2,10 @@ temp/
 tests/
 logs/
 whl/
+ComfyUI/
+custom_nodes/
+input/
+models/
+output/
+user/
 *test*

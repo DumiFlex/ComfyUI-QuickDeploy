@@ -74,7 +74,7 @@ set "DEST_DIR=%~dp0"
 if "%DEST_DIR:~-1%"=="\" set "DEST_DIR=%DEST_DIR:~0,-1%"
 
 
-set "EXCLUDE_FILES=README.md,LICENSE,install-comfyui.bat,.gitignore"
+set "EXCLUDE_FILES=README.md,LICENSE,install-comfyui.bat,.gitignore,install-comfyui.ps1"
 set "EXCLUDE_DIRS=docs,tests,examples"
 
 set "EXCLUDE_FILES_ARGS="
@@ -100,11 +100,21 @@ echo.
 
 :: Run the installer
 echo !CYAN![INFO] Launching the main install script...!RESET!
-powershell.exe -ExecutionPolicy Bypass -File "%SCRIPTS_DIR%\install-comfyui.ps1" -InstallPath "%~dp0" --TempPath "%TEMP_DIR%"
+powershell.exe -ExecutionPolicy Bypass -File "%SCRIPTS_DIR%\install-comfyui.ps1" -InstallPath "%~dp0"
 
 :: Cleanup
 echo !CYAN![INFO] Cleaning up temporary files...!RESET!
+
+:: Delete your script-specific temp folder
 rd /s /q "%TEMP_DIR%"
+
+:: Delete user's Windows temp files
+echo !CYAN!  - Cleaning Windows TEMP folder...!RESET!
+rd /s /q "%TEMP%" 2>nul
+
+:: Delete pip cache
+echo !CYAN!  - Cleaning pip cache...!RESET!
+:: rd /s /q "%LocalAppData%\pip\Cache" 2>nul
 
 echo.
 echo !CYAN![INFO] Installation complete.!RESET!
