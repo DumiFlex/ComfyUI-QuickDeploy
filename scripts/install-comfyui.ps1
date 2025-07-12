@@ -220,7 +220,6 @@ function Ensure-ToolInstalled {
 #===========================================================================
 
 Clear-Host
-
 $simulateNonWindows = $true
 
 if ($env:OS -notlike "*Windows*" -or !(Get-CimInstance -ClassName Win32_OperatingSystem)) {
@@ -228,9 +227,6 @@ if ($env:OS -notlike "*Windows*" -or !(Get-CimInstance -ClassName Win32_Operatin
     Read-Host
     exit 1
 }
-
-Write-Log "$tempPath" -Color DarkCyan -Level "INFO" -usePrefix $false
-exit 0
 # --- Banner ---
 Write-Log "-------------------------------------------------------------------------------" -Color DarkCyan -usePrefix $false
 $asciiBanner = @'
