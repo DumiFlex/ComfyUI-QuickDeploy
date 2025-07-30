@@ -625,7 +625,7 @@ if (-not (Test-Path $customNodesCsvPath)) {
             if ($node.RequirementsFile) {
                 $reqPath = Join-Path -Path $nodePath -ChildPath $node.RequirementsFile
                 if (Test-Path $reqPath) {
-                    Write-Log "Installing requirements for custom node: $nodeName" -Color Yellow -Level "INFO" -PrefixIndent 4
+                    Write-Log "Installing requirements for custom node: $nodeName" -Color DarkGray -Level "INFO" -PrefixIndent 4
                     Invoke-AndLog "$venvPython" "-m pip install -r `"$reqPath`""
                 }
             }           
